@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable> -->
+
+
+    <OutputType>Exe</OutputType>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="FOSS\**" />
+    <Compile Remove="lib\**" />
+    <EmbeddedResource Remove="FOSS\**" />
+    <EmbeddedResource Remove="lib\**" />
+    <None Remove="FOSS\**" />
+    <None Remove="lib\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Ephemera.NBagOfTricks">
+      <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
+    </Reference>
+    <!-- <Reference Include="Ephemera.NBagOfUis">
+      <HintPath>lib\Ephemera.NBagOfUis.dll</HintPath>
+    </Reference> -->
+  </ItemGroup>
+
+</Project>
