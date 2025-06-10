@@ -81,21 +81,27 @@
         </member>
         <member name="M:Ephemera.NBagOfTricks.ColorUtils.ColorFromAnsi(System.String)">
             <summary>
-            Decode ansi escape sequence arguments. TODOF AnsiFromColor()
+            Decode ansi escape sequence arguments. TODO AnsiFromColor()
             </summary>
             <param name="ansi">Ansi args string</param>
             <returns>Foreground and background colors. Color is Empty if invalid ansi string.</returns>
         </member>
-        <member name="F:Ephemera.NBagOfTricks.ColorUtils._conColors">
-            <summary>Lookup table.</summary>
-        </member>
-        <member name="M:Ephemera.NBagOfTricks.ColorUtils.ToSystemColor(System.ConsoleColor)">
-            <summary>Convert ConsoleColor to System Color.</summary>
-            <param name="conclr">The color</param>
+        <member name="M:Ephemera.NBagOfTricks.ColorUtils.MakeColor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Creates a Color object from rgb. If it is in the named collection, the name is applied.
+            </summary>
+            <param name="red"></param>
+            <param name="green"></param>
+            <param name="blue"></param>
             <returns></returns>
         </member>
+        <member name="M:Ephemera.NBagOfTricks.ColorUtils.ToSystemColor(System.ConsoleColor)">
+            <summary>Convert ConsoleColor to System.Color.</summary>
+            <param name="conclr">In color</param>
+            <returns>Out color</returns>
+        </member>
         <member name="M:Ephemera.NBagOfTricks.ColorUtils.ToConsoleColor(System.Drawing.Color)">
-            <summary>Convert System Color to ConsoleColor.</summary>
+            <summary>Convert System.Color to ConsoleColor.</summary>
             <param name="sysclr">The color</param>
             <returns></returns>
             <exception cref="T:System.Exception"></exception>
