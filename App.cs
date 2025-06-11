@@ -16,7 +16,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
 using Ephemera.NBagOfTricks;
+
 //using Ephemera.NBagOfUis;
 
 
@@ -115,7 +117,7 @@ namespace Treex
                                 break;
 
                             case "-e":
-                                var edres = SettingsEditor.Edit(_settings, "Treex", 500);
+//                                var edres = SettingsEditor.Edit(_settings, "Treex", 500);
                                 _settings.Save();
                                 go = false;
                                 break;
@@ -452,7 +454,7 @@ namespace Treex
         [Description("Ignore directories - base")]
         [Category("NTerm")]
         [Browsable(true)]
-        [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
+//        [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
         public List<string> IgnoreDirectories { get; set; } = [];
 
 
