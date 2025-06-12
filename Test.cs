@@ -42,7 +42,7 @@ namespace Treex
             }
             catch (IniSyntaxException ex)
             {
-                Console.WriteLine($"SyntaxException: {ex.Message}");
+                Console.WriteLine($"Syntax error({ex.LineNum}): {ex.Message}");
             }
             catch (Exception ex)
             {

@@ -1,18 +1,16 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-using Ephemera.NBagOfTricks;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
-using System.Linq;
-using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
+using Ephemera.NBagOfTricks;
 
-namespace Treex
+
+namespace Ephemera.NBagOfTricks
 {
-    public class IniSyntaxException(string message, int lineNum) : Exception($"Line {lineNum} [{message}]") { }
+    public class IniSyntaxException(string message, int lineNum) : Exception(message)
+    {
+        public int LineNum { get; init; } = lineNum;
+    }
+
 
     public class IniReader
     {
@@ -45,14 +43,14 @@ namespace Treex
                 {
                     if (line[^1 ] == ']')
                     {
-                        // New section.
-                        if (currentSection == "")
+                        // New section. Is it the first?
+                        if (currentSection != "")
                         {
                             if (currentValues.Count > 0)
                             {
                                 // Save last.
                                 Contents[currentSection] = currentValues;
-                                currentValues.Clear();
+                                currentValues = new();
                             }
                             else
                             {
@@ -80,7 +78,6 @@ namespace Treex
                 if (currentSection == "")
                 {
                     throw new IniSyntaxException($"Global values not supported: {inline}", lineNum);
-
                 }
 
                 var parts = line.SplitByToken("=");
@@ -106,7 +103,7 @@ namespace Treex
             {
                 // Save last.
                 Contents[currentSection] = currentValues;
-                currentValues.Clear();
+                currentValues = new();
             }
         }
     }
