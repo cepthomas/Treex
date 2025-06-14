@@ -95,7 +95,7 @@ namespace Ephemera.NBagOfTricks
                     throw new IniSyntaxException($"Duplicate key: {inline}", lineNum);
                 }
 
-                currentValues.Add(lhs, rhs); // TODO duplicate keys?
+                currentValues.Add(lhs, rhs);
             }
 
             // Anything left?
