@@ -19,27 +19,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="FOSS\**" />
     <Compile Remove="lib\**" />
-    <EmbeddedResource Remove="FOSS\**" />
     <EmbeddedResource Remove="lib\**" />
-    <None Remove="FOSS\**" />
     <None Remove="lib\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="IniFile.cs" />
-    <Compile Remove="IniReader.cs" />
-    <Compile Remove="net-ini.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Ephemera.NBagOfTricks">
       <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
     </Reference>
-    <!-- <Reference Include="Ephemera.NBagOfUis">
-      <HintPath>lib\Ephemera.NBagOfUis.dll</HintPath>
-    </Reference> -->
   </ItemGroup>
 
 </Project>
