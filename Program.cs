@@ -7,9 +7,9 @@ namespace Treex
     {
         static void Main()
         {
-            // var app = new App();
-            
-            var app = new Test();
+             var app = new App();
+
+            //var app = new Test();
 
 
         }

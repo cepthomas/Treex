@@ -1,57 +1,37 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Design;
 using System.IO;
-using System.IO.Ports;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
 using Ephemera.NBagOfTricks;
 
-//using Ephemera.NBagOfUis;
-
-
-// Useful?? C:\Dev\Libs\NBagOfUis\FilTree.cs
 
 // TODO ignore folders is only extensions for now, add regexp or wildcards later.
 
-namespace Treex
+namespace Treex // TODO1
 {
     public class App //: IDisposable
     {
         #region Fields
         /// <summary>Settings</summary>
-        readonly UserSettings _settings = new();
+      //  readonly UserSettings _settings = new();
         #endregion
 
-        // enum State { Nne, Done, }
-
-        public HashSet<string> ExeExtensions { get; set; } = new HashSet<string>
-        { ".exe", ".bat", ".cmd", ".com", ".ps1", ".vbs", ".vbe", ".wsf", ".wsh", ".msi", ".scr", ".reg" };
-
+        // Color defaults. TODO from ini?
         ConsoleColor _defaultColor = Console.ForegroundColor;
         ConsoleColor _dirColor = ConsoleColor.Blue;
-        ConsoleColor _fileColor = Console.ForegroundColor;
+        ConsoleColor _fileColor = ConsoleColor.Yellow;
         ConsoleColor _exeColor = ConsoleColor.Green;
 
-        bool _includeFiles;
-        bool _showSize;
-        //bool _asciiChars;
-        bool _hidden;
-        int _maxDepth;
-        HashSet<string> _ignoreDirs;
-
+        // Default defaults.
+        bool _includeFiles = true;
+        bool _showSize = false;
+        bool _asciiChars = true;
+        bool _includeHidden = false;
+        int _maxDepth = 0;
+        HashSet<string> _ignoreDirs = [];
 
         // Unicode is default.
         string _tee =  "├── ";
@@ -59,31 +39,78 @@ namespace Treex
         string _vert = "│   ";
         string _hor =  "    ";
 
-
         /// <summary>Build me one.</summary>
         public App()
         {
-            var appDir = MiscUtils.GetAppDataDir("Treex", "Ephemera");
-            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            //var appDir = MiscUtils.GetAppDataDir("Treex", "Ephemera");
+            //_settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
+            string? startFolder = Environment.CurrentDirectory;
 
-            // Init runtime values.
-            string? startFolder = null; //"current dir";
-            _includeFiles = _settings.IncludeFiles;
-            _showSize = _settings.ShowSize;
-            //_asciiChars = _settings.AsciiChars;
-            _maxDepth = _settings.MaxDepth;
-            _hidden = _settings.IncludeHidden;
-
-            _ignoreDirs = _settings.IgnoreDirectories.ToHashSet();
-
-            if (_settings.AsciiChars)
+            // Init runtime values from ini file.
+            try
             {
-                _tee =  "+---";
-                _ell = @"\---";
-                _vert = "|   ";
-                _hor =  "    ";
+                // Load the default ini file (from ??) - TODO1 or new one from cmd line?
+                var inrdr = new IniReader(Path.Join(MiscUtils.GetSourcePath(), "treex.ini"));
+                var section = inrdr.Contents["treex"];
+
+                foreach (var val in section.Values)
+                {
+                    switch (val.Key)
+                    {
+                        case "include_files": _includeFiles = bool.Parse(val.Value); break;
+                        case "show_size": _showSize = bool.Parse(val.Value); break;
+                        case "ascii_chars": _asciiChars = bool.Parse(val.Value); break;
+                        case "_include_hidden": _includeHidden = bool.Parse(val.Value); break;
+
+                        case "max_depth": _maxDepth = int.Parse(val.Value); break;
+
+                        case "image_files":
+                            var image_files = val.Value.SplitByToken(",");
+
+
+                            break;
+
+
+                        default:
+                            throw new ArgumentException($"Invalid Section Value: {val.Key}");
+                    }
+                    //max_depth = 3
+
+
+                    //; like bin, obj, ...
+                    //exclude_directories = .vs, bin, obj, ibin, iobj, x64, lib, .svn, .git, .hg, CVS, .github, __pycache__
+
+                    //image_files = jpeg, jpg, gif, png, ico, bmp, tga, psd, ppm, pgm, webp, hdr
+
+                    //audio_files = flac, m4a, mid, mp3, sty, wav, rpp, repeaks
+
+                    //executable_files = a, bin, dll, dylib, exe, lib, o, obj, pyc, pyo, so, class, jar
+
+                    //binary_files = chm, ctf, db, dds, docx, eot, idb, msi, ncb, out, pcs, pdb, pdf, prs, psd, sdf, sst, suo, swf, ttf, xls, xlsx, zip
+                }
+
+
+
+
+                //_includeFiles = _settings.IncludeFiles;
+                //_showSize = _settings.ShowSize;
+                ////_asciiChars = _settings.AsciiChars;
+                //_maxDepth = _settings.MaxDepth;
+                //_hidden = _settings.IncludeHidden;
+                //_ignoreDirs = _settings.IgnoreDirectories.ToHashSet();
+
             }
+            catch (IniSyntaxException ex)
+            {
+                Console.WriteLine($"Syntax error({ex.LineNum}): {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"!!! {ex.Message}");
+            }
+
+
 
             // Process command line.
             var args = Environment.GetCommandLineArgs().ToList();
@@ -116,11 +143,11 @@ namespace Treex
                                 go = false;
                                 break;
 
-                            case "-e":
-//                                var edres = SettingsEditor.Edit(_settings, "Treex", 500);
-                                _settings.Save();
-                                go = false;
-                                break;
+                            //case "-e":
+                            //    var edres = SettingsEditor.Edit(_settings, "Treex", 500);
+                            //    _settings.Save();
+                            //    go = false;
+                            //    break;
 
                             case "-s":
                                 _showSize = true;
@@ -156,23 +183,6 @@ namespace Treex
                     }
                 }
 
-                if (go)
-                {
-                    // Check supplied args.
-                    if (startFolder is null)
-                    {
-                        startFolder = Environment.CurrentDirectory;
-                    }
-                    else
-                    {
-                        CheckPath(startFolder);
-                    }
-
-                    // Check ignore paths.
-
-                    // Check maxDepth.
-
-                }
 
 
             }
@@ -183,8 +193,32 @@ namespace Treex
                 Environment.Exit(1);
             }
 
+
+
             if (go)
             {
+                // Check supplied args.
+                if (startFolder is null)
+                {
+                    startFolder = Environment.CurrentDirectory;
+                }
+                else
+                {
+                    CheckPath(startFolder);
+                }
+
+                // Check ignore paths.
+
+                // Check maxDepth.
+
+                if (_asciiChars)
+                {
+                    _tee = "+---";
+                    _ell = @"\---";
+                    _vert = "|   ";
+                    _hor = "    ";
+                }
+
             }
 
             Environment.Exit(0);
@@ -209,7 +243,7 @@ namespace Treex
             // - cmd line opts -- * has default in settings
             // [dir] - start folder or '.' if missing
             // incl files -f*
-            // maxDepth -d num*
+            // maxDepth -d num* 0 means all
             // hidden -h*
             // show size -s*
             // ignore folder(s) -i fld1;fld2;...*
@@ -343,12 +377,6 @@ namespace Treex
         }
 
 
-        // void NL()
-        // {
-        //     Console.Write(Environment.NewLine);
-        // }
-
-
         /// <summary>
         /// Write to console.
         /// </summary>
@@ -377,14 +405,14 @@ namespace Treex
             else
             {
                 string ext = Path.GetExtension(fsi.FullName).ToLower();
-                if (ExeExtensions.Contains(ext))
-                {
-                   clr = _exeColor;
-                }
-                else
-                {
-                    clr = _fileColor;
-                }
+                //if (ExeExtensions.Contains(ext))
+                //{
+                //   clr = _exeColor;
+                //}
+                //else
+                //{
+                //    clr = _fileColor;
+                //}
             }
 
             Print(fsi.Name, clr, true);
@@ -419,59 +447,41 @@ namespace Treex
         }
     }
 
-    [Serializable]
-    public class UserSettings : SettingsCore
-    {
-        [DisplayName("File Names")]
-        [Description("Include file names - default")]
-        // [Category("NTerm")]
-        [Browsable(true)]
-        public bool IncludeFiles { get; set; } = true;
+    //[Serializable]
+    //public class UserSettings : SettingsCore
+    //{
+    //    [DisplayName("File Names")]
+    //    [Description("Include file names - default")]
+    //    // [Category("NTerm")]
+    //    [Browsable(true)]
+    //    public bool IncludeFiles { get; set; } = true;
 
-        [DisplayName("Show Size")]
-        [Description("Show size - default")]
-        [Browsable(true)]
-        public bool ShowSize { get; set; } = true;
+    //    [DisplayName("Show Size")]
+    //    [Description("Show size - default")]
+    //    [Browsable(true)]
+    //    public bool ShowSize { get; set; } = true;
 
-        [DisplayName("Iteration Depth")]
-        [Description("How deep to look - default")]
-        [Browsable(true)]
-        public int MaxDepth { get; set; } = 3;
+    //    [DisplayName("Iteration Depth")]
+    //    [Description("How deep to look - default")]
+    //    [Browsable(true)]
+    //    public int MaxDepth { get; set; } = 3;
 
-        [DisplayName("Ascii Characters")]
-        [Description("Use ascii else unicode chars")]
-        [Browsable(true)]
-        public bool AsciiChars { get; set; } = true;
+    //    [DisplayName("Ascii Characters")]
+    //    [Description("Use ascii charactrs else unicode")]
+    //    [Browsable(true)]
+    //    public bool AsciiChars { get; set; } = true;
 
-        // Show unix "hidden" files/dirs like .git, .vs, .gitignore
-        [DisplayName("Include Hidden")]
-        [Description("Include hidden files (.*)")]
-        [Browsable(true)]
-        public bool IncludeHidden { get; set; } = false;
+    //    // Show unix "hidden" files/dirs like .git, .vs, .gitignore
+    //    [DisplayName("Include Hidden")]
+    //    [Description("Include hidden files (.*)")]
+    //    [Browsable(true)]
+    //    public bool IncludeHidden { get; set; } = false;
 
-        // like bin, obj, ...
-        [DisplayName("Ignore Directories")]
-        [Description("Ignore directories - base")]
-        [Category("NTerm")]
-        [Browsable(true)]
-//        [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
-        public List<string> IgnoreDirectories { get; set; } = [];
-
-
-
-
-        // [DisplayName("Fore Color")]
-        // [Description("Optional color")]
-        // [Category("Matcher")]
-        // [Browsable(true)]
-        // [JsonConverter(typeof(JsonStringEnumConverter))]
-        // public ConsoleColorEx ForeColor { get; set; } = ConsoleColorEx.None;
-
-        // [DisplayName("Back Color")]
-        // [Description("Optional color")]
-        // [Category("Matcher")]
-        // [Browsable(true)]
-        // [JsonConverter(typeof(JsonStringEnumConverter))]
-        // public ConsoleColorEx BackColor { get; set; } = ConsoleColorEx.None;
-    }
+    //    //// like bin, obj, ...
+    //    //[DisplayName("Ignore Directories")]
+    //    //[Description("Ignore directories - base")]
+    //    //[Category("NTerm")]
+    //    //[Browsable(true)]
+    //    //public List<string> IgnoreDirectories { get; set; } = [];
+    //}
 }

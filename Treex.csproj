@@ -28,6 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="IniFile.cs" />
+    <Compile Remove="IniReader.cs" />
+    <Compile Remove="net-ini.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Ephemera.NBagOfTricks">
       <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
     </Reference>
