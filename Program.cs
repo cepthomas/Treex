@@ -5,13 +5,9 @@ namespace Treex
 {
     internal class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
-             var app = new App();
-
-            //var app = new Test();
-
-
+            var app = new App(args);
         }
     }
 }

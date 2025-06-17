@@ -13,80 +13,102 @@ namespace Treex
     public class App
     {
         #region Fields
-        /// <summary>Settings</summary>
-        //  readonly UserSettings _settings = new();
+        readonly HashSet<string> excludeDirectories = [];
+        readonly Dictionary<string, ConsoleColorEx> extColors = [];
 
-        readonly HashSet<string> image_files = [];
-        readonly HashSet<string> audio_files = [];
-        readonly HashSet<string> executable_files = [];
-        readonly HashSet<string> binary_files = [];
-        readonly HashSet<string> exclude_directories = [];
+        // TODO useful? readonly string logFileName;
 
         // Visuals. Unicode is default.
-        readonly string tee = "├── ";
-        readonly string ell = "└── ";
-        readonly string vert = "│   ";
-        readonly string hor = "    ";
+        readonly record struct Visuals (string Tee, string Ell, string Vert, string Hor);
+        readonly Visuals Unicode = new("├── ", "└── ", "│   ", "    ");
+        readonly Visuals Ascii = new("+---", @"\---", "|   ", "    ");
+        readonly Visuals vis;
 
-        // Default defaults.
+        // Default defaults. May be overridden from cl.
         readonly string startFolder = Environment.CurrentDirectory;
-        readonly bool includeFiles = true;
+        readonly bool showFiles = true;
         readonly bool showSize = false;
-        readonly bool asciiChars = true;
-        readonly bool includeHidden = false;
+        readonly bool ascii = true;
         readonly int maxDepth = 0;
-        //exclude_directories = .vs, bin, obj, ibin, iobj, x64, lib, .svn, .git, .hg, CVS, .github, __pycache__
-        //image_files = jpeg, jpg, gif, png, ico, bmp, tga, psd, ppm, pgm, webp, hdr
-        //audio_files = flac, m4a, mid, mp3, sty, wav, rpp, repeaks
-        //executable_files = a, bin, dll, dylib, exe, lib, o, obj, pyc, pyo, so, class, jar
-        //binary_files = chm, ctf, db, dds, docx, eot, idb, msi, ncb, out, pcs, pdb, pdf, prs, psd, sdf, sst, suo, swf, ttf, xls, xlsx, zip
-
-        // Color defaults. TODO from ini?
         readonly ConsoleColor defaultColor = Console.ForegroundColor;
-        readonly ConsoleColor dirColor = ConsoleColor.Blue;
-        readonly ConsoleColor fileColor = ConsoleColor.Yellow;
-        readonly ConsoleColor exeColor = ConsoleColor.Green;
+        readonly ConsoleColorEx dirColor = ConsoleColorEx.None;
+        readonly ConsoleColorEx fileColor = ConsoleColorEx.None;
+        readonly ConsoleColorEx exeColor = ConsoleColorEx.None;
+        readonly ConsoleColorEx binColor = ConsoleColorEx.None;
         #endregion
 
         /// <summary>Build me one.</summary>
-        public App()
+        public App(string[] args)
         {
             try
             {
-                ///// Init runtime values from default ini file. TODO1 or new one from cmd line?
-                var inrdr = new IniReader(Path.Join(MiscUtils.GetSourcePath(), "treex.ini"));
+                string appDir = MiscUtils.GetAppDataDir("WBOT", "Ephemera");
+                //logFileName = Path.Combine(appDir, "log.txt");
+
+                ///// Init runtime values from default ini file. TODO or new one from cmd line?
+                var inrdr = new IniReader(Path.Join(appDir, "treex_default.ini"));
                 var section = inrdr.Contents["treex"];
+                HashSet<string> imageFiles = [];
+                HashSet<string> audioFiles = [];
+                HashSet<string> executableFiles = [];
+                HashSet<string> binaryFiles = [];
 
                 foreach (var val in section.Values)
                 {
                     switch (val.Key)
                     {
-                        case "include_files": includeFiles = bool.Parse(val.Value); break;
+                        case "show_files": showFiles = bool.Parse(val.Value); break;
                         case "show_size": showSize = bool.Parse(val.Value); break;
-                        case "ascii_chars": asciiChars = bool.Parse(val.Value); break;
-                        case "include_hidden": includeHidden = bool.Parse(val.Value); break;
+                        case "ascii": ascii = bool.Parse(val.Value); break;
                         case "max_depth": maxDepth = int.Parse(val.Value); break;
-                        case "image_files": image_files = [.. val.Value.SplitByToken(",")]; break;
-                        case "audio_files": audio_files = [.. val.Value.SplitByToken(",")]; break;
-                        case "executable_files": executable_files = [.. val.Value.SplitByToken(",")]; break;
-                        case "binary_files": binary_files = [.. val.Value.SplitByToken(",")]; break;
-                        case "exclude_directories": exclude_directories = [.. val.Value.SplitByToken(",")]; break;
-                        default: throw new ArgumentException($"Invalid Section Value: {val.Key}");
+
+                        case "image_files": imageFiles = ReadList(); break;
+                        case "audio_files": audioFiles = ReadList(); break;
+                        case "executable_files": executableFiles = ReadList(); break;
+                        case "binary_files": binaryFiles = ReadList(); break;
+
+                        case "exclude_directories": excludeDirectories = ReadList(false); break;
+
+                        case "dir_color": dirColor = ReadColor(); break;
+                        case "file_color": fileColor = ReadColor(); break;
+                        case "exe_color": exeColor = ReadColor(); break;
+                        case "bin_color": binColor = ReadColor(); break;
+
+                        default: throw new IniSyntaxException($"Invalid section value: {val.Key}", 9999);
                     }
+
+                    #region Parse helpers
+                    HashSet<string> ReadList(bool fixext = true)
+                    {
+                        HashSet<string> res = [];
+                        var parts = val.Value.SplitByToken(",");
+                        parts.ForEach(p => res.Add(fixext && !p.StartsWith('.') ? "." + p.ToLower() : p.ToLower()));
+                        return res;
+                    }
+
+                    ConsoleColorEx ReadColor()
+                    {
+                        if (Enum.TryParse(val.Value, true, out ConsoleColorEx pclr))
+                        {
+                            return pclr;
+                        }
+                        throw new IniSyntaxException($"Invalid color: {val.Key}", 9999);
+                    }
+                    #endregion
                 }
 
                 ///// Process command line options.
-                var args = Environment.GetCommandLineArgs().ToList();
-                bool go = true;
-
-                for (int i = 0; i < args.Count; i++)
+                for (int i = 0; i < args.Length; i++)
                 {
                     var arg = args[i];
 
                     if (i == 0 && !arg.StartsWith('-'))
                     {
-                        CheckPath(arg);
                         startFolder = arg;
+                        if (!Directory.Exists(startFolder))
+                        {
+                            throw new ArgumentException($"Invalid path: {startFolder}");
+                        }
                         continue;
                     }
 
@@ -94,7 +116,7 @@ namespace Treex
                     {
                         case "-?":
                             PrintUsage();
-                            go = false;
+                            Environment.Exit(0);
                             break;
 
                         case "-s":
@@ -102,25 +124,21 @@ namespace Treex
                             break;
 
                         case "-f":
-                            includeFiles = true;
+                            showFiles = true;
                             break;
 
-                        case "-h":
-                            includeHidden = true;
-                            break;
-
-                        case "-d": // N
+                        case "-d":
                             maxDepth = int.Parse(args[++i]);
                             break;
 
-                        case "-i": // fld 1,fld2,...
-                            // add to default if not there.
-                            List<string> iparts = args[++i].SplitByToken(";");
+                        case "-i":
+                            List<string> iparts = args[++i].SplitByToken(",");
+                            iparts.ForEach(p => excludeDirectories.Add(p));
                             break;
 
-                        case "-u": // fld1,fld2,...
-                            // remove from default.
-
+                        case "-u":
+                            List<string> uparts = args[++i].SplitByToken(",");
+                            uparts.ForEach(p => excludeDirectories.Remove(p));
                             break;
 
                         default:
@@ -128,169 +146,147 @@ namespace Treex
                     }
                 }
 
-                ///// Final fixups.
-                if (asciiChars)
-                {
-                    tee = "+---";
-                    ell = @"\---";
-                    vert = "|   ";
-                    hor = "    ";
-                }
+                ///// Final config fixups.
+                vis = ascii ? Ascii : Unicode;
 
-                /////
-                if (go)
-                {
-                    PrintTree(startFolder, "", 0);
-                }
+                imageFiles.ForEach(f => extColors[f] = binColor);
+                audioFiles.ForEach(f => extColors[f] = binColor);
+                binaryFiles.ForEach(f => extColors[f] = binColor);
+                executableFiles.ForEach(f => extColors[f] = exeColor);
+
+                ///// Do it, stewart /////
+                Print(startFolder);
+                Print(Environment.NewLine);
+                PrintTree(startFolder, "", 0);
             }
             catch (IniSyntaxException ex)
             {
                 Console.WriteLine($"Syntax error({ex.LineNum}): {ex.Message}");
-                // print something
+                Environment.Exit(1);
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"{ex.Message}");
                 Environment.Exit(1);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"!!! {ex.Message}");
-                // print something
+                Console.WriteLine($"{ex.GetType()}: {ex.Message}");
                 Environment.Exit(1);
             }
 
             Environment.Exit(0);
         }
 
-        void PrintTree(string dir, string prefix = "", int depth = 0)
+        /// <summary>
+        /// Do one level of this branch. Checks exclusion filters.
+        /// </summary>
+        /// <param name="startDir"></param>
+        /// <param name="prefix"></param>
+        /// <param name="depth"></param>
+        void PrintTree(string startDir, string prefix = "", int depth = 0)
         {
             if (maxDepth > 0 && depth >= maxDepth) return;
 
-            var di = new DirectoryInfo(dir);
+            var di = new DirectoryInfo(startDir);
 
-            //public FileSystemInfo[] GetFileSystemInfos(string searchPattern)
-            //public FileSystemInfo[] GetFileSystemInfos(string searchPattern, SearchOption searchOption)
-            //     Includes only the current directory in a search operation.
-            //TopDirectoryOnly = 0,
-            //     Includes the current directory and all its subdirectories in a search operation.
-            //     This option includes reparse points such as mounted drives and symbolic links
-            //     in the search.
-            //AllDirectories = 1
-
-            var infos = di.GetFileSystemInfos();
-
-            foreach (var fsi in infos)
+            // Print files first.
+            if (showFiles)
             {
-                // fsi.Extension;
-                // Full path of the directory/file
-                var fn = fsi.FullName;
-                var n = fsi.Name;
-                var isDir = (fsi.Attributes & FileAttributes.Directory) == FileAttributes.Directory;
-                var hidden = n[0] == '.';
-                var last = fsi == infos.Last();
+                var files = di.GetFiles().ToList();
+                files.Sort((x, y) => x.Name.CompareTo(y.Name));
 
-                switch (hidden, isDir, last)
+                foreach (var file in files)
                 {
-                   case (true, _, _):
-                       continue;
+                    var fn = file.FullName; // full path
+                    var nm = file.Name;
+                    var last = file == files.Last();
 
-                   case (false, true, false):
-                        Print(prefix + tee);
-                        PrintValue(fsi);
-                        // recurse =>
-                        PrintTree(fn, prefix + vert, depth + 1);
-                        break;
-
-                   case (false, false, false):
-                        Print(prefix + tee);
-                        PrintValue(fsi);
-                        break;
-
-                   case (false, true, true):
-                        Print(prefix + ell);
-                        PrintValue(fsi);
-                        PrintTree(fn, prefix + hor, depth + 1);
-                        break;
-
-                   case (false, false, true):
-                        Print(prefix + ell);
-                        PrintValue(fsi);
-                        break;
+                    if (file == files.Last())
+                    {
+                        Print($"{prefix}{vis.Ell}");
+                        PrintValue(file);
+                    }
+                    else
+                    {
+                        Print($"{prefix}{vis.Hor}");
+                        PrintValue(file);
+                    }
                 }
             }
 
-            // var fsItems = di.GetFileSystemInfos()
-            //    .Where(f => ShowAll || !f.Name.StartsWith("."))
-            //    .OrderBy(f => f.Name)
-            //    .ToList();
+            // Then dirs.
+            var dirs = di.GetDirectories().ToList();
+            dirs.Sort((x, y) => x.Name.CompareTo(y.Name));
 
-            // foreach (var fsItem in fsItems.Take(fsItems.Count() - 1))
-            // {
-            //     Print(prefix + _tee);
-            //     PrintValue(fsItem);
-            //     NL();
+            foreach (var dir in dirs)
+            {
+                var fn = dir.FullName; // full path
+                var nm = dir.Name;
 
-            //     if (IsDirectory(fsItem))
-            //     {
-            //         PrintTree(fsItem.FullName, prefix + _vert, depth + 1);
-            //     }
-            // }
+                if (!excludeDirectories.Contains(nm))
+                {
+                    if (dir == dirs.Last())
+                    {
+                        Print($"{prefix}{vis.Hor}");
+                        PrintValue(dir);
+                        PrintTree(fn, $"{prefix}{vis.Hor}", depth + 1); // => recurse
 
-            // // last item is handled
-            // var lastFsItem = fsItems.LastOrDefault();
-            // if (lastFsItem != null)
-            // {
-            //     Print(prefix + _ell);
-            //     PrintValue(lastFsItem);
-            //     NL();
-
-            //     if (IsDirectory(lastFsItem))
-            //     {
-            //         PrintTree(lastFsItem.FullName, prefix + _hor, depth + 1);
-            //     }
-            // }
+                    }
+                    else
+                    {
+                        Print($"{prefix}{vis.Tee}");
+                        PrintValue(dir);
+                        PrintTree(fn, $"{prefix}{vis.Vert}", depth + 1); // => recurse
+                    }
+                }
+            }
         }
 
         /// <summary>
-        /// Print one file system entry.
+        /// Print a file info.
         /// </summary>
-        /// <param name="fsi"></param>
-        void PrintValue(FileSystemInfo fsi)
+        /// <param name="fi"></param>
+        void PrintValue(FileInfo fi)
         {
-            ConsoleColor clr = defaultColor;
-
-            if (IsDirectory(fsi))
+            var slen = "";
+            if (showSize)
             {
-               clr = dirColor;
-            }
-            else
-            {
-                string ext = Path.GetExtension(fsi.FullName).ToLower();
-                //if (ExeExtensions.Contains(ext))
-                //{
-                //   clr = _exeColor;
-                //}
-                //else
-                //{
-                //    clr = _fileColor;
-                //}
+                var bytes = new FileInfo(fi.FullName).Length;
+                slen = bytes switch
+                {
+                    >= 1024 * 1024 => $" ({bytes / 1024 / 1024}M)",
+                    >= 1024 => $" ({bytes / 1024}K)",
+                    _ => $" ({bytes}B)"
+                };
             }
 
-            Print(fsi.Name, clr, true);
+            string ext = fi.Extension.ToLower();
+            var clr = extColors.TryGetValue(ext, out ConsoleColorEx clrex) ? clrex : fileColor;
+            Print($"{fi.Name}{slen}", clr);
+            Print(Environment.NewLine);
+        }
+
+        /// <summary>
+        /// Print a directory info.
+        /// </summary>
+        /// <param name="di"></param>
+        void PrintValue(DirectoryInfo di)
+        {
+            Print($"{di.Name}", dirColor);
+            Print(Environment.NewLine);
         }
 
         /// <summary>
         /// Low level write to console.
         /// </summary>
         /// <param name="text">What to print</param>
-        /// <param name="nl">Default is to add a nl.</param>
-        void Print(string text, ConsoleColor? clr = null, bool nl = false)
+        /// <param name="clr">Optional color</param>
+        void Print(string text, ConsoleColorEx clr = ConsoleColorEx.None)
         {
-            Console.ForegroundColor = clr ?? defaultColor;
+            Console.ForegroundColor = clr == ConsoleColorEx.None ? defaultColor : (ConsoleColor)clr;
             Console.Write(text);
             Console.ForegroundColor = defaultColor;
-
-            if (nl)
-            {
-                Console.Write(Environment.NewLine);
-            }
         }
 
         /// <summary>
@@ -298,40 +294,96 @@ namespace Treex
         /// </summary>
         void PrintUsage()
         {
-            // treex [maybe dir] [-f] [-h] [-d N] [-s] [-e] [-?] [-i fld 1,fld2,...] [-u fld1;fld 2;...]
-            // >>>
-            // treex maybe dir -f -d N -s -e -? -i fld 1;fld2;...; -u fld1;fld 2;...
-
-            // - cmd line opts -- * has default in settings
-            // [dir] - start folder or '.' if missing
-            // incl files -f*
-            // maxDepth -d num* 0 means all
-            // hidden -h*
-            // show size -s*
-            // ignore folder(s) -i fld1;fld2;...*  add to default
-            // unignore folder(s) -u fld1;fld2;...  remove from list
-            // TODO un/ignore file.exts? regex?
-            // commands::
-            // edit|settings -e
-            // help -?
-        }
-
-        ////////// TODO1 this stuff //////
-
-        void CheckPath(string path)
-        {
-            if (!Directory.Exists(path))
-            {
-                throw new ArgumentException($"Invalid path: {path}");
-            }
-        }
-
-
-        public bool IsDirectory(FileSystemInfo fsItem)
-        {
-            return (fsItem.Attributes & FileAttributes.Directory) == FileAttributes.Directory;
+            Console.WriteLine("treex [dir] [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...]");
+            Console.WriteLine("opts:  * indicates default in settings");
+            Console.WriteLine("    dir: start folder or '.' if missing");
+            Console.WriteLine("    -d num*: maxDepth (0 means all)");
+            Console.WriteLine("    -f*: show files ");
+            Console.WriteLine("    -s*: show size (file only)");
+            Console.WriteLine("    -i fld1,fld2,...*: ignore folders  (add to default)");
+            Console.WriteLine("    -u fld1,fld2,...*: unignore folders  (remove from default)");
+            Console.WriteLine("    -? help");
         }
     }
+
+    /*
+var infos = di.GetFileSystemInfos().ToList();
+infos.Sort((x, y) => x.Name.CompareTo(y.Name));
+foreach (var fsi in infos)
+{
+    //var ext = fsi.Extension;
+    var fn = fsi.FullName; // full path
+    var nm = fsi.Name;
+    var isDir = IsDirectory(fsi);
+    var last = fsi == infos.Last();
+
+    var exclude = (isDir && excludeDirectories.Contains(nm)) || (!isDir && !showFiles);
+
+    switch (exclude, isDir, last)
+    {
+       case (true, _, _):
+           continue;
+
+       case (false, true, false): // dir
+            Print($"{prefix}{vis.Tee}");
+            PrintValue(fsi);
+            PrintTree(fn, $"{prefix}{vis.Vert}", depth + 1); // => recurse
+            break;
+
+       case (false, true, true): // last dir
+            Print($"{prefix}{vis.Hor}");
+            PrintValue(fsi);
+            PrintTree(fn, $"{prefix}{vis.Hor}", depth + 1); // => recurse
+            break;
+
+        case (false, false, false): // file
+            Print($"{prefix}{vis.Hor}");
+            PrintValue(fsi);
+            break;
+
+        case (false, false, true): // last file
+            Print($"{prefix}{vis.Ell}");
+            PrintValue(fsi);
+            break;
+    }
+}
+*/
+
+    /*
+/// <summary>
+/// Print one file system entry. Selects color.
+/// </summary>
+/// <param name="fsi"></param>
+void PrintValue(FileSystemInfo fsi)
+{
+    ConsoleColorEx clr;
+    var slen = "";
+
+    if (IsDirectory(fsi))
+    {
+       clr = dirColor;
+    }
+    else
+    {
+        if (showSize)
+        {
+            var bytes = new FileInfo(fsi.FullName).Length;
+            slen = bytes switch
+            {
+                >= 1024 * 1024 => $" ({bytes / 1024 / 1024}M)",
+                >= 1024 => $" ({bytes / 1024}K)",
+                _ => $" ({bytes}B)"
+            };
+        }
+
+        string ext = fsi.Extension.ToLower();
+        clr = extColors.TryGetValue(ext, out ConsoleColorEx clrex) ? clrex : fileColor;
+    }
+
+    Print($"{fsi.Name}{slen}", clr);
+    Print(Environment.NewLine);
+}
+*/
 
 
 

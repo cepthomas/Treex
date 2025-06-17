@@ -1,33 +1,44 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <!-- <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable> -->
+    <PropertyGroup>
 
+        <OutputType>Exe</OutputType>
+        <UseWindowsForms>false</UseWindowsForms>
+        <Version>2.0.0</Version>
+        <AssemblyName>treex</AssemblyName>
+        <RootNamespace>Treex</RootNamespace>
 
-    <OutputType>Exe</OutputType>
-    <SelfContained>false</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <!-- <PlatformName>windows</PlatformName> -->
+        <!-- <Platforms>x64</Platforms> -->
+        <SelfContained>false</SelfContained>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-  </PropertyGroup>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <NoWarn>CA1816;CA1822</NoWarn>
+        <Deterministic>False</Deterministic>
+        <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+        <Company>Ephemera Inc</Company>
+        <Product>treex</Product>
+        <Description>Fancy tree command.</Description>
+        <Copyright>MIT License</Copyright>
+        <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+        <!-- <ApplicationIcon>Resources\app.ico</ApplicationIcon> -->
 
-  <ItemGroup>
-    <Compile Remove="lib\**" />
-    <EmbeddedResource Remove="lib\**" />
-    <None Remove="lib\**" />
-  </ItemGroup>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Reference Include="Ephemera.NBagOfTricks">
-      <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="lib\**" />
+        <EmbeddedResource Remove="lib\**" />
+        <None Remove="lib\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="Ephemera.NBagOfTricks">
+            <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
 </Project>
