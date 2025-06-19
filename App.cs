@@ -42,7 +42,7 @@ namespace Treex
         {
             try
             {
-                string appDir = MiscUtils.GetAppDataDir("WBOT", "Ephemera");
+                string appDir = MiscUtils.GetAppDataDir("Treex", "Ephemera");
                 //logFileName = Path.Combine(appDir, "log.txt");
 
                 ///// Init runtime values from default ini file. TODO or new one from cmd line?
