@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using Ephemera.NBagOfTricks;
 
+///////TODO1 copy bins to known location. C:\Dev\bin\ ?
+
 
 namespace Treex
 {
@@ -113,11 +115,6 @@ namespace Treex
 
                     switch (arg)
                     {
-                        case "-?":
-                            PrintUsage();
-                            Environment.Exit(0);
-                            break;
-
                         case "-s":
                             showSize = true;
                             break;
@@ -130,14 +127,19 @@ namespace Treex
                             maxDepth = int.Parse(args[++i]);
                             break;
 
-                        case "-i":
+                        case "-e":
                             List<string> iparts = args[++i].SplitByToken(",");
                             iparts.ForEach(p => excludeDirectories.Add(p));
                             break;
 
-                        case "-u":
+                        case "-i":
                             List<string> uparts = args[++i].SplitByToken(",");
                             uparts.ForEach(p => excludeDirectories.Remove(p));
+                            break;
+
+                        case "-?":
+                            PrintUsage();
+                            Environment.Exit(0);
                             break;
 
                         default:
@@ -288,14 +290,14 @@ namespace Treex
         /// </summary>
         void PrintUsage()
         {
-            Console.WriteLine("treex [dir] [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...]");
+            Console.WriteLine("treex [dir] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...]");
             Console.WriteLine("opts:  * indicates default in settings");
             Console.WriteLine("    dir: start folder or '.' if missing");
             Console.WriteLine("    -d num*: maxDepth (0 means all)");
             Console.WriteLine("    -f*: show files ");
             Console.WriteLine("    -s*: show size (file only)");
-            Console.WriteLine("    -i fld1,fld2,...*: ignore folders  (add to default)");
-            Console.WriteLine("    -u fld1,fld2,...*: unignore folders  (remove from default)");
+            Console.WriteLine("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
+            Console.WriteLine("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");
             Console.WriteLine("    -? help");
         }
     }
