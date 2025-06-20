@@ -7,8 +7,6 @@ using System.Linq;
 using System.Text;
 using Ephemera.NBagOfTricks;
 
-///////TODO1 copy bins to known location. C:\Dev\bin\ ?
-
 
 namespace Treex
 {
