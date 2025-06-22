@@ -4,29 +4,22 @@
 
         <OutputType>Exe</OutputType>
         <UseWindowsForms>false</UseWindowsForms>
+        <OutputPath>bin\</OutputPath>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
         <Version>2.0.0</Version>
         <AssemblyName>treex</AssemblyName>
         <RootNamespace>Treex</RootNamespace>
-        <SelfContained>false</SelfContained>
-        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
         <NoWarn>CA1816;CA1822</NoWarn>
-        <Deterministic>False</Deterministic>
         <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
         <Company>Ephemera Inc</Company>
         <Product>treex</Product>
         <Description>Fancy tree command.</Description>
         <Copyright>MIT License</Copyright>
-        <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
         <!-- <ApplicationIcon>Resources\app.ico</ApplicationIcon> -->
-
-        <OutputPath>bin\</OutputPath>
-        <TargetFramework>net8.0-windows</TargetFramework>
-        <!-- <PlatformName>windows</PlatformName> -->
-        <!-- <Platforms>x64</Platforms> -->
-        <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
-        <Platforms>x64</Platforms>
 
     </PropertyGroup>
 
