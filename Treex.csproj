@@ -19,7 +19,7 @@
         <Product>treex</Product>
         <Description>Fancy tree command.</Description>
         <Copyright>MIT License</Copyright>
-        <!-- <ApplicationIcon>Resources\app.ico</ApplicationIcon> -->
+        <ApplicationIcon>medusa.ico</ApplicationIcon>
 
     </PropertyGroup>
 
