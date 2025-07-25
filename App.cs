@@ -27,6 +27,7 @@ namespace Treex
         readonly bool showFiles = true;
         readonly bool showSize = false;
         readonly bool ascii = true;
+        readonly bool color = true;
         readonly int maxDepth = 0;
         readonly ConsoleColor defaultColor = Console.ForegroundColor;
         readonly ConsoleColorEx dirColor = ConsoleColorEx.None;
@@ -42,10 +43,11 @@ namespace Treex
 
             try
             {
-                string appDir = MiscUtils.GetAppDataDir("Treex", "Ephemera");
+                //string appDir = MiscUtils.GetAppDataDir("Treex", "Ephemera");
 
-                ///// Init runtime values from default ini file. TODO or new one from cmd line?
-                var inrdr = new IniReader(Path.Join(appDir, "treex_default.ini"));
+                ///// Init runtime values from default ini file. TODO or one in exe dir or new one from cmd line?
+                var inrdr = new IniReader(@"C:\Dev\bin\treex.ini");
+                //var inrdr = new IniReader(Path.Join(appDir, "treex_default.ini"));
                 var section = inrdr.Contents["treex"];
                 HashSet<string> imageFiles = [];
                 HashSet<string> audioFiles = [];
@@ -119,6 +121,10 @@ namespace Treex
 
                         case "-f":
                             showFiles = true;
+                            break;
+
+                        case "-c":
+                            color = false;
                             break;
 
                         case "-d":
@@ -278,9 +284,16 @@ namespace Treex
         /// <param name="clr">Optional color</param>
         void Print(string text, ConsoleColorEx clr = ConsoleColorEx.None)
         {
-            Console.ForegroundColor = clr == ConsoleColorEx.None ? defaultColor : (ConsoleColor)clr;
-            Console.Write(text);
-            Console.ForegroundColor = defaultColor;
+            if (color)
+            {
+                Console.ForegroundColor = clr == ConsoleColorEx.None ? defaultColor : (ConsoleColor)clr;
+                Console.Write(text);
+                Console.ForegroundColor = defaultColor;
+            }
+            else
+            {
+                Console.Write(text);
+            }
         }
 
         /// <summary>
@@ -288,11 +301,12 @@ namespace Treex
         /// </summary>
         void PrintUsage()
         {
-            Console.WriteLine("treex [dir] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...]");
+            Console.WriteLine("treex [dir] [-c] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...]");
             Console.WriteLine("opts:  * indicates default in settings");
-            Console.WriteLine("    dir: start folder or '.' if missing");
+            Console.WriteLine("    dir: start folder or current if missing");
+            Console.WriteLine("    -c: color output off");
             Console.WriteLine("    -d num*: maxDepth (0 means all)");
-            Console.WriteLine("    -f*: show files ");
+            Console.WriteLine("    -f*: show files");
             Console.WriteLine("    -s*: show size (file only)");
             Console.WriteLine("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
             Console.WriteLine("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");

@@ -29,6 +29,7 @@ Some defaults can then be overidden on the command line:
 Option              | Description                           | Default Override
 -----------         | -----------                           | ------------------------
 dir                 | start folder or current if missing    | NA
+-c                  | color output off                      | NA
 -d num              | maxDepth (0 means all)                | Y
 -f                  | show files                            | Y
 -s                  | show size (file only)                 | Y
