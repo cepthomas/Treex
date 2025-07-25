@@ -43,11 +43,8 @@ namespace Treex
 
             try
             {
-                //string appDir = MiscUtils.GetAppDataDir("Treex", "Ephemera");
-
-                ///// Init runtime values from default ini file. TODO or one in exe dir or new one from cmd line?
-                var inrdr = new IniReader(@"C:\Dev\bin\treex.ini");
-                //var inrdr = new IniReader(Path.Join(appDir, "treex_default.ini"));
+                // Init runtime values from ini file.
+                var inrdr = new IniReader(Path.Join(Environment.ExpandEnvironmentVariables("DEV_BIN_PATH"), "treex.ini"));
                 var section = inrdr.Contents["treex"];
                 HashSet<string> imageFiles = [];
                 HashSet<string> audioFiles = [];
