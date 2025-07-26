@@ -96,19 +96,12 @@ namespace Treex
                 }
 
                 ///// Process command line options.
+                                                var startFolder = args[args.Length - 2];
+
+                // treex [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...] [dir]
                 for (int i = 0; i < args.Length; i++)
                 {
                     var arg = args[i];
-
-                    if (i == 0 && !arg.StartsWith('-'))
-                    {
-                        startFolder = arg;
-                        if (!Directory.Exists(startFolder))
-                        {
-                            throw new ArgumentException($"Invalid path: {startFolder}");
-                        }
-                        continue;
-                    }
 
                     switch (arg)
                     {
@@ -144,7 +137,19 @@ namespace Treex
                             break;
 
                         default:
-                            throw new ArgumentException($"Invalid argument: {arg}");
+                            // If last, check for valid startFolder.
+                            if (i == args.Length - 1)
+                            {
+                                if (!Directory.Exists(arg))
+                                {
+                                    throw new ArgumentException($"Invalid folder: {arg}");
+                                }
+                                var startFolder = arg;
+                            }
+                            else
+                            {
+                                throw new ArgumentException($"Invalid argument: {arg}");
+                            }
                     }
                 }
 
@@ -293,12 +298,10 @@ namespace Treex
             }
         }
 
-        /// <summary>
-        /// Give some help.
-        /// </summary>
+        /// <summary>Give some help.</summary>
         void PrintUsage()
         {
-            Console.WriteLine("treex [dir] [-c] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...]");
+            Console.WriteLine("treex [-c] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...] [dir]");
             Console.WriteLine("opts:  * indicates default in settings");
             Console.WriteLine("    dir: start folder or current if missing");
             Console.WriteLine("    -c: color output off");
@@ -308,6 +311,12 @@ namespace Treex
             Console.WriteLine("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
             Console.WriteLine("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");
             Console.WriteLine("    -? help");
+        }
+
+        /// <summary>start here.</summary>
+        static void Main(string[] args)
+        {
+            var app = new App(args);
         }
     }
 }

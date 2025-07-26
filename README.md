@@ -3,7 +3,7 @@ Fancier tree command for Windows with more options and colorized output.
 
 ## Configuration
 
-Copy `treex_default.ini` to `%APPDATA%\Ephemera\Treex\treex_default.ini` and edit to taste.
+Copy `treex_default.ini` to `TODO1???\treex.ini` and edit to taste.
 
 Element                 | Description                                       | Default
 -----------             | -----------                                       | ------------------------
@@ -24,7 +24,7 @@ bin_color               | Color                                             | re
 
 Some defaults can then be overidden on the command line:
 
-`treex [dir] [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...]`
+`treex [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...] [dir]`
 
 Option              | Description                           | Default Override
 -----------         | -----------                           | ------------------------
