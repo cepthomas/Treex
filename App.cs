@@ -44,7 +44,8 @@ namespace Treex
             try
             {
                 // Init runtime values from ini file.
-                var inrdr = new IniReader(Path.Join(Environment.ExpandEnvironmentVariables("DEV_BIN_PATH"), "treex.ini"));
+                var exe = Environment.GetEnvironmentVariable("DEV_BIN_PATH");
+                var inrdr = new IniReader(Path.Join(exe, "treex.ini"));
                 var section = inrdr.Contents["treex"];
                 HashSet<string> imageFiles = [];
                 HashSet<string> audioFiles = [];
@@ -96,8 +97,6 @@ namespace Treex
                 }
 
                 ///// Process command line options.
-                                                var startFolder = args[args.Length - 2];
-
                 // treex [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...] [dir]
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -144,12 +143,13 @@ namespace Treex
                                 {
                                     throw new ArgumentException($"Invalid folder: {arg}");
                                 }
-                                var startFolder = arg;
+                                startFolder = arg;
                             }
                             else
                             {
                                 throw new ArgumentException($"Invalid argument: {arg}");
                             }
+                            break;
                     }
                 }
 
@@ -316,7 +316,7 @@ namespace Treex
         /// <summary>start here.</summary>
         static void Main(string[] args)
         {
-            var app = new App(args);
+            new App(args);
         }
     }
 }
