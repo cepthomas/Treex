@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Ephemera.NBagOfTricks;
 
@@ -18,22 +19,24 @@ namespace Treex
 
         // Visuals. Unicode is default.
         readonly record struct Visuals (string Tee, string Ell, string Pipe, string Empty);
-        readonly Visuals Unicode = new("├── ", "└── ", "│   ", "    ");
-        readonly Visuals Ascii = new("+---", @"\---", "|   ", "    ");
+        readonly Visuals visUnicode = new("├── ", "└── ", "│   ", "    ");
+        readonly Visuals visAscii = new("+---", @"\---", "|   ", "    ");
         readonly Visuals vis;
 
         // Default defaults. May be overridden from cl.
-        readonly bool showFiles = true;
+        readonly bool showDirs = false;
         readonly bool showSize = false;
         readonly bool ascii = true;
         readonly bool color = true;
         readonly int maxDepth = 0;
-        readonly ConsoleColor defaultColor = Console.ForegroundColor;
+//        readonly ConsoleColor defaultColor = Console.ForegroundColor;
         readonly ConsoleColorEx dirColor = ConsoleColorEx.None;
-        readonly ConsoleColorEx fileColor = ConsoleColorEx.None;
-        readonly ConsoleColorEx exeColor = ConsoleColorEx.None;
-        readonly ConsoleColorEx binColor = ConsoleColorEx.None;
+        //readonly ConsoleColorEx fileColor = ConsoleColorEx.None;
+        //readonly ConsoleColorEx exeColor = ConsoleColorEx.None;
+        //readonly ConsoleColorEx binColor = ConsoleColorEx.None;
         readonly ConsoleColorEx errColor = ConsoleColorEx.None;
+
+
         #endregion
 
         /// <summary>Build me one.</summary>
@@ -45,50 +48,66 @@ namespace Treex
             {
                 // Default start location.
                 string startDir = Environment.CurrentDirectory;
-                startDir = "C:\\Dev\\Misc";
+startDir = "C:\\Dev\\Misc";
 
                 // Init runtime values from ini file. Implement or rename TOOLS_PATH here and in csproj file.
                 var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
                 var inrdr = new IniReader(Path.Join(exe, "treex.ini"));
                 var section = inrdr.Contents["treex"];
-                HashSet<string> imageFiles = [];
-                HashSet<string> audioFiles = [];
-                HashSet<string> executableFiles = [];
-                HashSet<string> binaryFiles = [];
+                //HashSet<string> imageFiles = [];
+                //HashSet<string> audioFiles = [];
+                //HashSet<string> executableFiles = [];
+                //HashSet<string> binaryFiles = [];
+
+                //Dictionary<string, ConsoleColorEx> extColors = [];
 
                 foreach (var val in section.Values)
                 {
                     switch (val.Key)
                     {
-                        case "show_files": showFiles = bool.Parse(val.Value); break;
+                        case "show_dirs": showDirs = bool.Parse(val.Value); break;
                         case "show_size": showSize = bool.Parse(val.Value); break;
                         case "ascii": ascii = bool.Parse(val.Value); break;
                         case "max_depth": maxDepth = int.Parse(val.Value); break;
 
-                        case "image_files": imageFiles = ReadList(); break;
-                        case "audio_files": audioFiles = ReadList(); break;
-                        case "executable_files": executableFiles = ReadList(); break;
-                        case "binary_files": binaryFiles = ReadList(); break;
+                        //case "image_files": imageFiles = ReadList(); break;
+                        //case "audio_files": audioFiles = ReadList(); break;
+                        //case "executable_files": executableFiles = ReadList(); break;
+                        //case "binary_files": binaryFiles = ReadList(); break;
 
-                        case "exclude_directories": excludeDirectories = ReadList(false); break;
+                        case "exclude_directories":
+                            var dparts = val.Value.SplitByToken(",");
+                            dparts.ForEach(p => excludeDirectories.Add(p));// res.Add(fixext && !p.StartsWith('.') ? "." + p.ToLower() : p.ToLower()));
+                          //  excludeDirectories = ReadList(false);
+                          break;
 
                         case "dir_color": dirColor = ReadColor(); break;
-                        case "file_color": fileColor = ReadColor(); break;
-                        case "exe_color": exeColor = ReadColor(); break;
-                        case "bin_color": binColor = ReadColor(); break;
+//                        case "file_color": fileColor = ReadColor(); break;
+  //                      case "exe_color": exeColor = ReadColor(); break;
+    //                    case "bin_color": binColor = ReadColor(); break;
                         case "err_color": errColor = ReadColor(); break;
+
+
+                        case string s when s.Contains("_files"):
+                            var fparts = val.Value.SplitByToken(",");
+                            if (fparts.Count < 2 || !Enum.TryParse(fparts[0], true, out ConsoleColorEx pclr))
+                            {
+                                throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
+                            }
+                            fparts.Take(1..).ForEach(p => extColors.Add(p.Replace(".", ""), pclr));
+                            break;
 
                         default: throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
                     }
 
                     #region Parse helpers
-                    HashSet<string> ReadList(bool fixext = true)
-                    {
-                        HashSet<string> res = [];
-                        var parts = val.Value.SplitByToken(",");
-                        parts.ForEach(p => res.Add(fixext && !p.StartsWith('.') ? "." + p.ToLower() : p.ToLower()));
-                        return res;
-                    }
+                    //HashSet<string> ReadListX(bool fixext = true)
+                    //{
+                    //    HashSet<string> res = [];
+                    //    var parts = val.Value.SplitByToken(",");
+                    //    parts.ForEach(p => res.Add(fixext && !p.StartsWith('.') ? "." + p.ToLower() : p.ToLower()));
+                    //    return res;
+                    //}
 
                     ConsoleColorEx ReadColor()
                     {
@@ -113,15 +132,15 @@ namespace Treex
                             showSize = true;
                             break;
 
-                        case "-f":
-                            showFiles = true;
+                        case "-d":
+                            showDirs = true;
                             break;
 
                         case "-c":
                             color = false;
                             break;
 
-                        case "-d":
+                        case "-m":
                             maxDepth = int.Parse(args[++i]);
                             break;
 
@@ -159,12 +178,12 @@ namespace Treex
                 }
 
                 ///// Final config fixups.
-                vis = ascii ? Ascii : Unicode;
+                vis = ascii ? visAscii : visUnicode;
 
-                imageFiles.ForEach(f => extColors[f] = binColor);
-                audioFiles.ForEach(f => extColors[f] = binColor);
-                binaryFiles.ForEach(f => extColors[f] = binColor);
-                executableFiles.ForEach(f => extColors[f] = exeColor);
+                //imageFiles.ForEach(f => extColors[f] = binColor);
+                //audioFiles.ForEach(f => extColors[f] = binColor);
+                //binaryFiles.ForEach(f => extColors[f] = binColor);
+                //executableFiles.ForEach(f => extColors[f] = exeColor);
 
                 ///// Do it, stewart /////
                 Print(startDir);
@@ -205,7 +224,7 @@ namespace Treex
                 var di = new DirectoryInfo(startDir);
 
                 ///// Collect contents first.
-                var files = showFiles ? di.GetFiles().ToList() : [];
+                var files = showDirs ? [] : di.GetFiles().ToList();
                 files.Sort((x, y) => x.Name.CompareTo(y.Name));
 
                 var dirs = di.GetDirectories().Where(d => !excludeDirectories.Contains(d.Name)).ToList();
@@ -221,12 +240,12 @@ namespace Treex
                     if (dirs.Count > 0)
                     {
                   //      Print($"{prefix}{vis.Pipe}");
-                        PrintValue($"{prefix}{vis.Pipe}", file);
+                        PrintFile($"{prefix}{vis.Pipe}", file);
                     }
                     else
                     {
                   //      Print($"{prefix}{vis.Empty}");
-                        PrintValue($"{prefix}{vis.Empty}", file);
+                        PrintFile($"{prefix}{vis.Empty}", file);
                     }
                 }
 
@@ -239,14 +258,14 @@ namespace Treex
                     if (dir == dirs.Last())
                     {
                  //       Print($"{prefix}{vis.Ell}");
-                        PrintValue($"{prefix}{vis.Ell}", dir);
+                        PrintDir($"{prefix}{vis.Ell}", dir);
                         PrintTree(fn, $"{prefix}{vis.Empty}", depth + 1); // => recurse
 
                     }
                     else
                     {
                  //       Print($"{prefix}{vis.Tee}");
-                        PrintValue($"{prefix}{vis.Tee}", dir);
+                        PrintDir($"{prefix}{vis.Tee}", dir);
                         PrintTree(fn, $"{prefix}{vis.Pipe}", depth + 1); // => recurse
                     }
                 }
@@ -267,10 +286,10 @@ namespace Treex
         }
 
         /// <summary>
-        /// Print file info..
+        /// Print file info.
         /// </summary>
         /// <param name="fi"></param>
-        void PrintValue(string prefix, FileInfo fi)
+        void PrintFile(string prefix, FileInfo fi)
         {
             var slen = "";
             if (showSize)
@@ -284,8 +303,8 @@ namespace Treex
                 };
             }
 
-            string ext = fi.Extension.ToLower();
-            var clr = extColors.TryGetValue(ext, out ConsoleColorEx clrex) ? clrex : fileColor;
+            string ext = fi.Extension.ToLower().Replace(".", "");
+            var clr = extColors.TryGetValue(ext, out ConsoleColorEx clrex) ? clrex : ConsoleColorEx.None;
             Print($"{prefix}{fi.Name}{slen}", clr);
      //       Print(Environment.NewLine);
         }
@@ -294,7 +313,7 @@ namespace Treex
         /// Print a directory info.
         /// </summary>
         /// <param name="di"></param>
-        void PrintValue(string prefix, DirectoryInfo di)
+        void PrintDir(string prefix, DirectoryInfo di)
         {
             Print($"{prefix}{di.Name}", dirColor);
       //      Print(Environment.NewLine);
@@ -309,9 +328,10 @@ namespace Treex
         {
             if (color)
             {
-                Console.ForegroundColor = clr == ConsoleColorEx.None ? defaultColor : (ConsoleColor)clr;
+                var fgColor = Console.ForegroundColor;
+                Console.ForegroundColor = clr == ConsoleColorEx.None ? fgColor : (ConsoleColor)clr;
                 Console.Write(text);
-                Console.ForegroundColor = defaultColor;
+                Console.ForegroundColor = fgColor;
             }
             else
             {
@@ -333,34 +353,11 @@ namespace Treex
             Print("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
             Print("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");
             Print("    -? help");
-
             
-            for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
-            {
-                Print($"{(ConsoleColorEx)i}", (ConsoleColorEx)i);
-            }
-            //public enum ConsoleColorEx
+            //for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
             //{
-            //    None = -1,
-            //    Black = ConsoleColor.Black,
-            //    DarkBlue = ConsoleColor.DarkBlue,
-            //    DarkGreen = ConsoleColor.DarkGreen,
-            //    DarkCyan = ConsoleColor.DarkCyan,
-            //    DarkRed = ConsoleColor.DarkRed,
-            //    DarkMagenta = ConsoleColor.DarkMagenta,
-            //    DarkYellow = ConsoleColor.DarkYellow,
-            //    Gray = ConsoleColor.Gray,
-            //    DarkGray = ConsoleColor.DarkGray,
-            //    Blue = ConsoleColor.Blue,
-            //    Green = ConsoleColor.Green,
-            //    Cyan = ConsoleColor.Cyan,
-            //    Red = ConsoleColor.Red,
-            //    Magenta = ConsoleColor.Magenta,
-            //    Yellow = ConsoleColor.Yellow,
-            //    White = ConsoleColor.White
+            //    Print($"{(ConsoleColorEx)i}", (ConsoleColorEx)i);
             //}
-
-
         }
 
         /// <summary>Start here.</summary>
