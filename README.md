@@ -1,9 +1,13 @@
 # Treex
 Fancier tree command for Windows with more options and colorized output.
 
+Currently this is a build-it-yourself tool using VS2022 and .NET8. It requires an env var called
+`TOOLS_PATH` where the binaries are copied, and a corresponding entry in `PATH`.
+Alternatively, the `App.cs` and `Treex.csproj` can be modified to taste.
+
 ## Configuration
 
-Copy `treex_default.ini` to `TODO1???\treex.ini` and edit to taste.
+Copy `treex_default.ini` to `$TOOLS_PATH\treex.ini` and edit to taste.
 
 Element                 | Description                                       | Default
 -----------             | -----------                                       | ------------------------
@@ -16,10 +20,11 @@ image_files             | CSV list                                          | Fo
 audio_files             | CSV list                                          | For colorizing
 binary_files            | CSV list                                          | For colorizing
 executable_files        | CSV list                                          | For colorizing
-dir_color               | Color                                             | blue
-file_color              | Color                                             | none
-exe_color               | Color                                             | yellow
-bin_color               | Color                                             | red
+dir_color               | Color for directories                             | blue
+file_color              | Color for files                                   | none
+exe_color               | Color for executables                             | yellow
+bin_color               | Color other binaries                              | grreen
+err_color               | Color for syntax and internal errors              | red
 
 
 Some defaults can then be overidden on the command line:
