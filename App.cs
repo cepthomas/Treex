@@ -36,15 +36,13 @@ namespace Treex
         /// <summary>Build me one.</summary>
         public App(string[] args)
         {
-            int code = 0;
+            // Default start location.
+            string startDir = Environment.CurrentDirectory;
+            startDir = @"C:\Dev\Apps\Treex\Test";
 
+            // Init runtime values from ini file if available.
             try
             {
-                // Default start location.
-                string startDir = Environment.CurrentDirectory;
-//startDir = "C:\\Dev\\Misc";
-
-                // Init runtime values from ini file. Implement or rename TOOLS_PATH here and in csproj file.
                 var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
                 var inrdr = new IniReader(Path.Join(exe, "treex.ini"));
                 var section = inrdr.Contents["treex"];
@@ -57,40 +55,53 @@ namespace Treex
                         case "show_size": showSize = bool.Parse(val.Value); break;
                         case "ascii": ascii = bool.Parse(val.Value); break;
                         case "max_depth": maxDepth = int.Parse(val.Value); break;
-                        case "dir_color": dirColor = ReadColor(); break;
-                        case "err_color": errColor = ReadColor(); break;
+
+                        case "dir_color":
+                            if (!Enum.TryParse(val.Value, true, out dirColor))
+                            { throw new IniSyntaxException($"Invalid color for {val.Key}", -1); }
+                            break;
+
+                        case "err_color":
+                            if (!Enum.TryParse(val.Value, true, out errColor))
+                            { throw new IniSyntaxException($"Invalid color for {val.Key}", -1); }
+                            break;
 
                         case "exclude_directories":
                             var dparts = val.Value.SplitByToken(",");
-                            dparts.ForEach(p => excludeDirectories.Add(p));// res.Add(fixext && !p.StartsWith('.') ? "." + p.ToLower() : p.ToLower()));
-                          break;
+                            dparts.ForEach(p => excludeDirectories.Add(p));
+                            break;
 
                         case string s when s.Contains("_files"):
                             var fparts = val.Value.SplitByToken(",");
                             if (fparts.Count < 2 || !Enum.TryParse(fparts[0], true, out ConsoleColorEx pclr))
-                            {
-                                throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
-                            }
+                            { throw new IniSyntaxException($"Invalid section value for {val.Key}", -1); }
                             fparts.Take(1..).ForEach(p => extColors.Add(p.Replace(".", ""), pclr));
                             break;
 
                         default: throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
                     }
-
-                    #region Parse helpers
-                    ConsoleColorEx ReadColor()
-                    {
-                        if (Enum.TryParse(val.Value, true, out ConsoleColorEx pclr))
-                        {
-                            return pclr;
-                        }
-                        throw new IniSyntaxException($"Invalid color for {val.Key}", -1);
-                    }
-                    #endregion
                 }
+            }
+            catch (IniSyntaxException ex)
+            {
+                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", errColor);
+                Environment.Exit(1);
+            }
+            catch (FileNotFoundException)
+            {
+                PrintLine($">>>>> Ini file not found, using defaults");
+            }
+            catch (Exception ex) // other
+            {
+                PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
+                Environment.Exit(2);
+            }
 
-                ///// Process command line options.
-                // treex [-f] [-d N] [-s] [-?] [-i fld 1,fld2,...] [-u fld1,fld2,...] [dir]
+            // Process command line options.
+            try
+            {
+                // treex [-f] [-c] [-m N] [-d] [-s] [-i fld 1,fld2,...] [-u fld1,fld2,...] [-?] [dir]
+
                 for (int i = 0; i < args.Length; i++)
                 {
                     var arg = args[i];
@@ -149,27 +160,22 @@ namespace Treex
                 ///// Final config fixups.
                 vis = ascii ? visAscii : visUnicode;
 
-                ///// Do it, stewart /////
-                Print(startDir);
+                ///// Do it stewart /////
+                PrintLine(startDir);
                 PrintTree(startDir, "", 0);
-            }
-            catch (IniSyntaxException ex)
-            {
-                Print($"IniSyntaxException at {ex.LineNum}: {ex.Message}", errColor);
-                code = 1;
             }
             catch (ArgumentException ex)
             {
-                Print($"ArgumentException: {ex.Message}", errColor);
-                code = 2;
+                PrintLine($"ArgumentException: {ex.Message}", errColor);
+                Environment.Exit(3);
             }
             catch (Exception ex)
             {
-                Print($"{ex.GetType()}: {ex.Message}", errColor);
-                code = 3;
+                PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
+                Environment.Exit(4);
             }
 
-            Environment.Exit(code);
+            Environment.Exit(0);
         }
 
         /// <summary>
@@ -233,7 +239,7 @@ namespace Treex
                 // For some exceptions just log and continue.
                 if (ex is UnauthorizedAccessException)
                 {
-                    Print(ex.Message, errColor);
+                    PrintLine(ex.Message, errColor);
                 }
                 else
                 {
@@ -262,7 +268,8 @@ namespace Treex
 
             string ext = fi.Extension.ToLower().Replace(".", "");
             var clr = extColors.TryGetValue(ext, out ConsoleColorEx clrex) ? clrex : ConsoleColorEx.None;
-            Print($"{prefix}{fi.Name}{slen}", clr);
+            Print($"{prefix}");
+            PrintLine($"{fi.Name}{slen}", clr);
         }
 
         /// <summary>
@@ -271,7 +278,8 @@ namespace Treex
         /// <param name="di"></param>
         void PrintDir(string prefix, DirectoryInfo di)
         {
-            Print($"{prefix}{di.Name}", dirColor);
+            Print($"{prefix}");
+            PrintLine($"{di.Name}", dirColor);
         }
 
         /// <summary>
@@ -292,26 +300,37 @@ namespace Treex
             {
                 Console.Write(text);
             }
+        }
+
+        /// <summary>
+        /// Low level write to console.
+        /// </summary>
+        /// <param name="text">What to print</param>
+        /// <param name="clr">Optional color</param>
+        void PrintLine(string text, ConsoleColorEx clr = ConsoleColorEx.None)
+        {
+            Print(text, clr);
             Console.Write(Environment.NewLine);
         }
 
         /// <summary>Give some help.</summary>
         void PrintUsage()
         {
-            Print("treex [-c] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...] [dir]");
-            Print("opts:  * indicates default in settings");
-            Print("    dir: start folder or current if missing");
-            Print("    -c: color output off");
-            Print("    -d num*: maxDepth (0 means all)");
-            Print("    -f*: show files");
-            Print("    -s*: show size (file only)");
-            Print("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
-            Print("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");
-            Print("    -? help");
-            
+            PrintLine("treex [-c] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...] [dir]");
+            PrintLine("opts:  * indicates default in settings");
+            PrintLine("    dir: start folder or current if missing");
+            PrintLine("    -c: color output off");
+            PrintLine("    -d num*: maxDepth (0 means all)");
+            PrintLine("    -f*: show files");
+            PrintLine("    -s*: show size (file only)");
+            PrintLine("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
+            PrintLine("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");
+            PrintLine("    -? help");
+
             //for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
             //{
-            //    Print($"{(ConsoleColorEx)i}", (ConsoleColorEx)i);
+            //    Print($"{(ConsoleColorEx)i} => ");
+            //    PrintLine($"{(ConsoleColorEx)i}", (ConsoleColorEx)i);
             //}
         }
 
