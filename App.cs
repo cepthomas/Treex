@@ -24,10 +24,10 @@ namespace Treex
         readonly Visuals vis;
 
         // Default defaults. May be overridden from cl.
-        readonly bool showDirs = false;
+        readonly bool showFiles = false;
         readonly bool showSize = false;
-        readonly bool ascii = true;
-        readonly bool color = true;
+        readonly bool unicode = false;
+        readonly bool color = false;
         readonly int maxDepth = 0;
         readonly ConsoleColorEx dirColor = ConsoleColorEx.None;
         readonly ConsoleColorEx errColor = ConsoleColorEx.None;
@@ -38,7 +38,6 @@ namespace Treex
         {
             // Default start location.
             string startDir = Environment.CurrentDirectory;
-            startDir = @"C:\Dev\Apps\Treex\Test";
 
             // Init runtime values from ini file if available.
             try
@@ -51,10 +50,11 @@ namespace Treex
                 {
                     switch (val.Key)
                     {
-                        case "show_dirs": showDirs = bool.Parse(val.Value); break;
+                        case "show_files": showFiles = bool.Parse(val.Value); break;
                         case "show_size": showSize = bool.Parse(val.Value); break;
-                        case "ascii": ascii = bool.Parse(val.Value); break;
+                        case "unicode": unicode = bool.Parse(val.Value); break;
                         case "max_depth": maxDepth = int.Parse(val.Value); break;
+                        case "use_color": color = bool.Parse(val.Value); break;
 
                         case "dir_color":
                             if (!Enum.TryParse(val.Value, true, out dirColor))
@@ -97,10 +97,10 @@ namespace Treex
                 Environment.Exit(2);
             }
 
-            // Process command line options.
+            // Process/overlay  command line options.
             try
             {
-                // treex [-f] [-c] [-m N] [-d] [-s] [-i fld 1,fld2,...] [-u fld1,fld2,...] [-?] [dir]
+                // treex [-f] [-c] [-m N] [-d] [-s] [-i fld 1,fld2,...] [-u fld1,fld2,...] [-h] [dir]
 
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -112,12 +112,16 @@ namespace Treex
                             showSize = true;
                             break;
 
-                        case "-d":
-                            showDirs = true;
+                        case "-f":
+                            showFiles = true;
                             break;
 
                         case "-c":
-                            color = false;
+                            color = true;
+                            break;
+
+                        case "-u":
+                            unicode = true;
                             break;
 
                         case "-m":
@@ -134,6 +138,7 @@ namespace Treex
                             uparts.ForEach(p => excludeDirectories.Remove(p));
                             break;
 
+                        case "-h":
                         case "-?":
                             PrintUsage();
                             Environment.Exit(0);
@@ -158,7 +163,7 @@ namespace Treex
                 }
 
                 ///// Final config fixups.
-                vis = ascii ? visAscii : visUnicode;
+                vis = unicode ? visUnicode : visAscii;
 
                 ///// Do it stewart /////
                 PrintLine(startDir);
@@ -193,7 +198,7 @@ namespace Treex
                 var di = new DirectoryInfo(startDir);
 
                 ///// Collect contents first.
-                var files = showDirs ? [] : di.GetFiles().ToList();
+                var files = showFiles ? di.GetFiles().ToList() : [];
                 files.Sort((x, y) => x.Name.CompareTo(y.Name));
 
                 var dirs = di.GetDirectories().Where(d => !excludeDirectories.Contains(d.Name)).ToList();
@@ -316,22 +321,17 @@ namespace Treex
         /// <summary>Give some help.</summary>
         void PrintUsage()
         {
-            PrintLine("treex [-c] [-f] [-d N] [-s] [-?] [-e fld 1,fld2,...] [-i fld1,fld2,...] [dir]");
-            PrintLine("opts:  * indicates default in settings");
-            PrintLine("    dir: start folder or current if missing");
-            PrintLine("    -c: color output off");
-            PrintLine("    -d num*: maxDepth (0 means all)");
-            PrintLine("    -f*: show files");
-            PrintLine("    -s*: show size (file only)");
-            PrintLine("    -e fld1,fld2,...*: exclude directory(s)  (adds to default)");
-            PrintLine("    -i fld1,fld2,...*: unexclude directory(s)  (removes to default)");
-            PrintLine("    -? help");
-
-            //for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
-            //{
-            //    Print($"{(ConsoleColorEx)i} => ");
-            //    PrintLine($"{(ConsoleColorEx)i}", (ConsoleColorEx)i);
-            //}
+            PrintLine("treex [-c] [-f] [-d N] [-s] [-h] [dir]");
+            PrintLine("opts:");
+            PrintLine("    dir: start folder (default is current)");
+            PrintLine("    -c: color output (default is off=monochrome)");
+            PrintLine("    -u: unicode output otherwise ascii (default is ascii)");
+            PrintLine("    -d num: maxDepth (default is 0 which means all)");
+            PrintLine("    -f: show files (default is just dirs)");
+            PrintLine("    -s: show file size (default is false)");
+            PrintLine("    -e fld1,fld2,...: exclude directory(s)  (adds to config)");
+            PrintLine("    -i fld1,fld2,...: unexclude directory(s)  (removes from config)");
+            PrintLine("    -h help");
         }
 
         /// <summary>Start here.</summary>
