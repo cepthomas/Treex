@@ -43,10 +43,11 @@ namespace Treex
             try
             {
                 var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
-                var inrdr = new IniReader(Path.Join(exe, "treex.ini"));
-                var section = inrdr.Contents["treex"];
+                var inrdr = new IniReader();
+                inrdr.ParseFile(Path.Join(exe, "treex.ini"));
+                var section = inrdr.GetValues("treex");
 
-                foreach (var val in section.Values)
+                foreach (var val in section)
                 {
                     switch (val.Key)
                     {
