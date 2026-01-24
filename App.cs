@@ -15,7 +15,7 @@ namespace Treex
     {
         #region Fields
         readonly HashSet<string> excludeDirectories = [];
-        readonly Dictionary<string, ConsoleColorEx> extColors = [];
+        readonly Dictionary<string, ConsoleColor> extColors = [];
 
         // Visuals. Unicode is default.
         readonly record struct Visuals (string Tee, string Ell, string Pipe, string Empty);
@@ -29,8 +29,8 @@ namespace Treex
         readonly bool unicode = false;
         readonly bool color = false;
         readonly int maxDepth = 0;
-        readonly ConsoleColorEx dirColor = ConsoleColorEx.None;
-        readonly ConsoleColorEx errColor = ConsoleColorEx.None;
+        readonly ConsoleColor dirColor = ConsoleColor.Blue;
+        readonly ConsoleColor errColor = ConsoleColor.Red;
         #endregion
 
         /// <summary>Build me one.</summary>
@@ -38,13 +38,14 @@ namespace Treex
         {
             // Default start location.
             string startDir = Environment.CurrentDirectory;
+            var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
+            var inifile = Path.Join(exe, "treex.ini");
 
             // Init runtime values from ini file if available.
             try
             {
-                var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
                 var inrdr = new IniReader();
-                inrdr.ParseFile(Path.Join(exe, "treex.ini"));
+                inrdr.ParseFile(inifile);
                 var section = inrdr.GetValues("treex");
 
                 foreach (var val in section)
@@ -59,12 +60,12 @@ namespace Treex
 
                         case "dir_color":
                             if (!Enum.TryParse(val.Value, true, out dirColor))
-                            { throw new IniSyntaxException($"Invalid color for {val.Key}", -1); }
+                            { throw new IniSyntaxException($"Invalid color [{val.Value}] for [{val.Key}]", -1); }
                             break;
 
                         case "err_color":
                             if (!Enum.TryParse(val.Value, true, out errColor))
-                            { throw new IniSyntaxException($"Invalid color for {val.Key}", -1); }
+                            { throw new IniSyntaxException($"Invalid color [{val.Value}] for [{val.Key}]", -1); }
                             break;
 
                         case "exclude_directories":
@@ -74,35 +75,34 @@ namespace Treex
 
                         case string s when s.Contains("_files"):
                             var fparts = val.Value.SplitByToken(",");
-                            if (fparts.Count < 2 || !Enum.TryParse(fparts[0], true, out ConsoleColorEx pclr))
-                            { throw new IniSyntaxException($"Invalid section value for {val.Key}", -1); }
+                            if (fparts.Count < 2 || !Enum.TryParse(fparts[0], true, out ConsoleColor pclr))
+                            { throw new IniSyntaxException($"Invalid section value [{fparts[0]}] for [{val.Key}]", -1); }
                             fparts.Take(1..).ForEach(p => extColors.Add(p.Replace(".", ""), pclr));
                             break;
 
-                        default: throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
+                        default: throw new IniSyntaxException($"Invalid section value for [{val.Key}]", -1);
                     }
                 }
             }
             catch (IniSyntaxException ex)
             {
-                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", errColor);
+                PrintLine($"Ini file error: {ex.Message}", errColor);
                 Environment.Exit(1);
             }
-            catch (FileNotFoundException)
+            catch (FileNotFoundException ex)
             {
-                PrintLine($">>>>> Ini file not found, using defaults");
+                PrintLine($"Ini file{inifile} not found", errColor);
+                Environment.Exit(1);
             }
             catch (Exception ex) // other
             {
                 PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
-                Environment.Exit(2);
+                Environment.Exit(1);
             }
 
-            // Process/overlay  command line options.
+            // Process/overlay command line options.
             try
             {
-                // treex [-f] [-c] [-m N] [-d] [-s] [-i fld 1,fld2,...] [-u fld1,fld2,...] [-h] [dir]
-
                 for (int i = 0; i < args.Length; i++)
                 {
                     var arg = args[i];
@@ -173,12 +173,12 @@ namespace Treex
             catch (ArgumentException ex)
             {
                 PrintLine($"ArgumentException: {ex.Message}", errColor);
-                Environment.Exit(3);
+                Environment.Exit(1);
             }
             catch (Exception ex)
             {
                 PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
-                Environment.Exit(4);
+                Environment.Exit(1);
             }
 
             Environment.Exit(0);
@@ -273,13 +273,13 @@ namespace Treex
             }
 
             string ext = fi.Extension.ToLower().Replace(".", "");
-            var clr = extColors.TryGetValue(ext, out ConsoleColorEx clrex) ? clrex : ConsoleColorEx.None;
+            ConsoleColor? clr = extColors.TryGetValue(ext, out ConsoleColor clrex) ? clrex : null;
             Print($"{prefix}");
             PrintLine($"{fi.Name}{slen}", clr);
         }
 
         /// <summary>
-        /// Print a directory info.
+        /// Print directory info.
         /// </summary>
         /// <param name="di"></param>
         void PrintDir(string prefix, DirectoryInfo di)
@@ -293,12 +293,12 @@ namespace Treex
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="clr">Optional color</param>
-        void Print(string text, ConsoleColorEx clr = ConsoleColorEx.None)
+        void Print(string text, ConsoleColor? clr = null)
         {
             if (color)
             {
                 var fgColor = Console.ForegroundColor;
-                Console.ForegroundColor = clr == ConsoleColorEx.None ? fgColor : (ConsoleColor)clr;
+                Console.ForegroundColor = clr ?? fgColor;
                 Console.Write(text);
                 Console.ForegroundColor = fgColor;
             }
@@ -313,7 +313,7 @@ namespace Treex
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="clr">Optional color</param>
-        void PrintLine(string text, ConsoleColorEx clr = ConsoleColorEx.None)
+        void PrintLine(string text, ConsoleColor? clr = null)
         {
             Print(text, clr);
             Console.Write(Environment.NewLine);

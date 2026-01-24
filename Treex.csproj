@@ -38,7 +38,6 @@
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TOOLS_PATH)' != ''">
         <Exec Command="copy /Y $(OutputPath)treex.exe $(TOOLS_PATH)" />
         <Exec Command="copy /Y $(OutputPath)treex.dll $(TOOLS_PATH)" />
-        <Exec Command="copy /Y $(OutputPath)treex.xml $(TOOLS_PATH)" />
         <Exec Command="copy /Y $(OutputPath)treex.runtimeconfig.json $(TOOLS_PATH)" />
     </Target>
 
