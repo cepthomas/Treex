@@ -89,7 +89,7 @@ namespace Treex
                 PrintLine($"Ini file error: {ex.Message}", errColor);
                 Environment.Exit(1);
             }
-            catch (FileNotFoundException ex)
+            catch (FileNotFoundException)
             {
                 PrintLine($"Ini file{inifile} not found", errColor);
                 Environment.Exit(1);
