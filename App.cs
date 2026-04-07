@@ -41,9 +41,9 @@ namespace Treex
             var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
             var inifile = Path.Join(exe, "treex.ini");
 
-            // Init runtime values from ini file if available.
             try
             {
+                // Init runtime values from ini file if available.
                 var inrdr = new IniReader();
                 inrdr.ParseFile(inifile);
                 var section = inrdr.GetValues("treex");
@@ -83,26 +83,8 @@ namespace Treex
                         default: throw new IniSyntaxException($"Invalid section value for [{val.Key}]", -1);
                     }
                 }
-            }
-            catch (IniSyntaxException ex)
-            {
-                PrintLine($"Ini file error: {ex.Message}", errColor);
-                Environment.Exit(1);
-            }
-            catch (FileNotFoundException)
-            {
-                PrintLine($"Ini file{inifile} not found", errColor);
-                Environment.Exit(1);
-            }
-            catch (Exception ex) // other
-            {
-                PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
-                Environment.Exit(1);
-            }
 
-            // Process/overlay command line options.
-            try
-            {
+                // Process/overlay command line options.
                 for (int i = 0; i < args.Length; i++)
                 {
                     var arg = args[i];
@@ -170,12 +152,22 @@ namespace Treex
                 PrintLine(startDir);
                 PrintTree(startDir, "", 0);
             }
+            catch (IniSyntaxException ex)
+            {
+                PrintLine($"Ini file error: {ex.Message}", errColor);
+                Environment.Exit(1);
+            }
+            catch (FileNotFoundException)
+            {
+                PrintLine($"Ini file{inifile} not found", errColor);
+                Environment.Exit(1);
+            }
             catch (ArgumentException ex)
             {
                 PrintLine($"ArgumentException: {ex.Message}", errColor);
                 Environment.Exit(1);
             }
-            catch (Exception ex)
+            catch (Exception ex) // other
             {
                 PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
                 Environment.Exit(1);
