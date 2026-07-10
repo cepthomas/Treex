@@ -38,8 +38,7 @@ namespace Treex
         {
             // Default start location.
             string startDir = Environment.CurrentDirectory;
-            var exe = Environment.GetEnvironmentVariable("TOOLS_PATH");
-            var inifile = Path.Join(exe, "treex.ini");
+            var inifile = Path.Join(Environment.GetEnvironmentVariable("TOOLS_PATH"), "treex.ini");
 
             try
             {
