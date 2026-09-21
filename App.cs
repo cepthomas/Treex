@@ -106,7 +106,7 @@ namespace Treex
                             unicode = true;
                             break;
 
-                        case "-m":
+                        case "-d":
                             maxDepth = int.Parse(args[++i]);
                             break;
 
