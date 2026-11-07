@@ -1,7 +1,7 @@
 # Treex
 Fancier tree command for Windows with more options and colorized output.
 
-Currently this is a build-it-yourself tool using VS2022 and .NET8.
+Currently this is a build-it-yourself tool using VS2026 and .NET10.
 If you provide an env var called `TOOLS_PATH` and a corresponding entry in `PATH`,
 build copies the executables to it. This is also where the application looks for your
 specific `treex.ini` file.
